@@ -1,122 +1,78 @@
 #include<stdio.h>
-#include<stdlib.h>
-struct process{
-	int id;
-	int priority;
-	int arrival_time;
-	int burst_time;
-	int timer;
-	int wait;
-	int tat;
-};
-int n; 
-typedef struct process process;
-int h_p(process pr[], int n){
-    int i;
-    int hp = 0;
-    for(i=0;i<n;i++){
-        if((pr[i].priority < pr[hp].priority) && (pr[i].burst_time > 0)){
-            hp = i;
-        }
-    }
-    for(i=0;i<n;i++){
-        if((pr[i].priority == pr[hp].priority) && (pr[i].burst_time > 0)){
-            if(pr[i].id < pr[hp].id)
-                hp = i;
-        }
-    }
-    return hp;
-}
-void update_process(process a[],int n,int rp){
-    int i;
-    printf("Inside update n is %d",n);
-    for(i=0; i<n; i++){
-        if(a[i].burst_time>0){
-                if(i!=rp){
-                    a[i].wait++;
-                    if(a[i].timer>0){
-                        a[i].timer--;
-                    }
-                    else{
-                        a[i].timer = 2;
-                        a[i].priority -= 1;
-                        if(a[i].priority < 0)
-                            a[i].priority = 0;
-                    }
-                }
-                else if(i == rp){
-                    a[i].burst_time--;
-                }
-        }
-    }
-}
-int count_done_process(process a[],int n){
-    int i;
-    int c=0;
-    for(i=0; i<n; i++){
-        if(a[i].burst_time == 0){
-            c++;
-        }
-    }
-    return c;
-}
-int main(){
-	printf("Enter number of process: ");
-	scanf("%d",&n);
-	struct process p[n];
-	int i;
-	for(i=1; i<=n; i++){
-		p[i-1].id = i;
-		p[i-1].timer = 2;
-		p[i-1].wait = 0;
-		p[i-1].tat = 0;
-		printf("Enter arrival time of the process %d: ",i);
-		scanf("%d",&p[i-1].arrival_time);
-		printf("Enter priority of process %d: ",i);
-		scanf("%d",&p[i-1].priority);
-		printf("Enter burst time of process %d: ",i);
-		scanf("%d",&p[i-1].burst_time);
-	}
-	int j;
-	struct process temp;
-	for(i=0; i<n-1; i++){
-		for(j=0; j<n-i-1; j++){
-			if(p[j].arrival_time > p[j+1].arrival_time){
-				temp = p[j];
-				p[j]= p[j+1];
-				p[j+1] = temp;
-			}
-		}
-	}
-	for(i=0; i<n; i++){
-		printf("process id=%d, arrival time=%d, burst time=%d, priority=%d\n",p[i].id,p[i].arrival_time,p[i].burst_time,p[i].priority);
-	}
-	struct process curr[n];
-	int clock = 0;
-    int p_cur = 0;
-    int c_cur = 0;
-    int rp = -1;
-    int dp = 0;
-    int pp;
-	while(p_cur < n){
-            while(p_cur < n && p[p_cur].arrival_time <= clock){
-                curr[c_cur] = p[p_cur];
-                p_cur++;
-                c_cur++;
+
+struct process
+{
+      char process_name;
+      int arrival_time, burst_time, ct, waiting_time, turnaround_time, priority;
+      int status;
+}process_queue[10];
+
+int limit;
+
+void Arrival_Time_Sorting()
+{
+      struct process temp;
+      int i, j;
+      for(i = 0; i < limit - 1; i++)
+      {
+            for(j = i + 1; j < limit; j++)
+            {
+                  if(process_queue[i].arrival_time > process_queue[j].arrival_time)
+                  {
+                        temp = process_queue[i];
+                        process_queue[i] = process_queue[j];
+                        process_queue[j] = temp;
+                  }
             }
-            pp = h_p(curr, c_cur);
-            if(rp == -1){
-                rp = pp;
-                clock++;
-                update_process(curr,c_cur,rp);
-            }
-            else{
-                clock +=2;
-            }
-            dp = count_done_process(curr, c_cur);
-	}
-    for(i=0; i<n; i++){
-                printf("process id=%d, arrival time=%d, burst time=%d, priority=%d\n",curr[i].id,curr[i].arrival_time,curr[i].burst_time,curr[i].priority);
-            }
+      }
 }
 
+int main()
+{
+      int i, time = 0, burst_time = 0, largest;
+      char c;
+      float wait_time = 0, turnaround_time = 0, average_waiting_time, average_turnaround_time;
+      printf("\nEnter Total Number of Processes:\t");
+      scanf("%d", &limit);
+      for(i = 0, c = 'A'; i < limit; i++, c++)
+      {
+            process_queue[i].process_name = c;
+            printf("\nEnter Details For Process[%C]:\n", process_queue[i].process_name);
+            printf("Enter Arrival Time:\t");
+            scanf("%d", &process_queue[i].arrival_time );
+            printf("Enter Burst Time:\t");
+            scanf("%d", &process_queue[i].burst_time);
+            printf("Enter Priority:\t");
+            scanf("%d", &process_queue[i].priority);
+            process_queue[i].status = 0;
+            burst_time = burst_time + process_queue[i].burst_time;
+      }
+      Arrival_Time_Sorting();
+      process_queue[9].priority = -9999;
+      printf("\nProcess Name\tArrival Time\tBurst Time\tPriority\tWaiting Time");
+      for(time = process_queue[0].arrival_time; time < burst_time;)
+      {
+            largest = 9;
+            for(i = 0; i < limit; i++)
+            {
+                  if(process_queue[i].arrival_time <= time && process_queue[i].status != 1 && process_queue[i].priority > process_queue[largest].priority)
+                  {
+                        largest = i;
+                  }
+            }
+            time = time + process_queue[largest].burst_time;
+            process_queue[largest].ct = time;
+            process_queue[largest].waiting_time = process_queue[largest].ct - process_queue[largest].arrival_time - process_queue[largest].burst_time;
+            process_queue[largest].turnaround_time = process_queue[largest].ct - process_queue[largest].arrival_time;
+            process_queue[largest].status = 1;
+            wait_time = wait_time + process_queue[largest].waiting_time;
+            turnaround_time = turnaround_time + process_queue[largest].turnaround_time;
+            printf("\n%c\t\t%d\t\t%d\t\t%d\t\t%d", process_queue[largest].process_name, process_queue[largest].arrival_time, process_queue[largest].burst_time, process_queue[largest].priority, process_queue[largest].waiting_time);
+      }
+      average_waiting_time = wait_time / limit;
+      average_turnaround_time = turnaround_time / limit;
+      printf("\n\nAverage waiting time:\t%f\n", average_waiting_time);
+      printf("Average Turnaround Time:\t%f\n", average_turnaround_time);
+
+return 0;
+}
